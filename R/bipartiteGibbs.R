@@ -26,9 +26,6 @@
 #'				get recycled to the required length.  If not specified, flat priors are taken.  
 #' @param aBM,bBM	hyper-parameters of beta prior on bipartite matchings. Default is \code{aBM=bBM=1}.
 #' @param seed	seed to be used for pseudo-random number generation.  By default it sets \code{seed=0}.
-#' @param ... ... use to pass additional arguments to stringdist::stringdistmatrix to control the distance calculation. 
-#'        The method is set to "lv" by default to maintain consistency with previous versions of BRL. This is different from the 
-#'        default method use in stringdist. 
 #' 
 #' @return a list containing: 
 #' \describe{
@@ -46,7 +43,7 @@
 #' data(twoFiles)
 #' 
 #' myCompData <- compareRecords(df1, df2, flds=c("gname", "fname", "age", "occup"), 
-#'                              types=c("lv","lv","bi","bi"))
+#'                              types=c("str","str","bi","bi"))
 #' 
 #' chain <- bipartiteGibbs(myCompData)
 

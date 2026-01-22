@@ -13,23 +13,24 @@
 
 void RandomPickNoSort(int *n, double *p, int *ans)
 {
-    double rU;
-    int i;
-    int nm1 = n[0] - 1;
-
-    /* compute cumulative probabilities */
-    for (i = 1 ; i < n[0]; i++)
-	p[i] += p[i - 1];
-	
-	GetRNGstate();
-    /* compute the sample */
-	rU = runif(0,p[nm1]);
-	for (i = 0; i < nm1; i++) {
-	    if (rU <= p[i])
-		break;
-	}
-	ans[0] = i;
-    PutRNGstate();
+  double rU;
+  int i;
+  int nm1 = n[0] - 1;
+  
+  /* compute cumulative probabilities */
+  for (i = 1; i < n[0]; i++) {
+    p[i] += p[i - 1];
+  }
+  
+  GetRNGstate();
+  /* compute the sample */
+  rU = runif(0, p[nm1]);
+  for (i = 0; i < nm1; i++) {
+    if (rU <= p[i])
+      break;
+  }
+  ans[0] = i;
+  PutRNGstate();
 }
 
 /* BRLGibbs: full Gibbs sampler in C*/

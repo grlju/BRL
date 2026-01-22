@@ -102,7 +102,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	if(!is.data.frame(df2)) stop("'df2' is not a data frame")
 	
 	if(!is.null(flds)){ # user provides 'flds' fields in 'df1' and 'df2' for linkage 
-		if( !(class(flds) %in% c("character", "numeric")) )
+	  if (!is.character(flds) && !is.numeric(flds))
 			stop("'flds' should be of class character or numeric")
 		
 		if(!is.null(flds1)) warning("Argument 'flds' was provided, 'flds1' is ignored")
@@ -126,18 +126,18 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			flds2 <- match(flds2, colnames(df2))
 		}
 	}else{
-		if(is.null(flds1) & !is.null(flds2)) stop("Argument 'flds1' also needs to be specified")
-		if(is.null(flds2) & !is.null(flds1)) stop("Argument 'flds2' also needs to be specified")
-		if(is.null(flds2) & is.null(flds2)){
+		if(is.null(flds1) && !is.null(flds2)) stop("Argument 'flds1' also needs to be specified")
+		if(is.null(flds2) && !is.null(flds1)) stop("Argument 'flds2' also needs to be specified")
+		if(is.null(flds1) && is.null(flds2)){
 			flds1 <- flds2 <- intersect(colnames(df1), colnames(df2))
 			if(length(flds1)==0)
 				stop("'df1' and 'df2' do not have fields with the same names")
 			flds1 <- match(flds1, colnames(df1))
 			flds2 <- match(flds2, colnames(df2))
 		}else{ # user provides 'flds1' and 'flds2' fields in 'df1' and 'df2' for linkage 
-			if( !(class(flds1) %in% c("character", "numeric")) )
+		  if (!is.character(flds1) && !is.numeric(flds1))
 				stop("'flds1' should be of class character or numeric")
-			if( !(class(flds2) %in% c("character", "numeric")) )
+		  if (!is.character(flds2) && !is.numeric(flds2))
 				stop("'flds2' should be of class character or numeric")
 			if(is.numeric(flds1)){
 				flds1Check <- flds1 %in% seq_len(ncol(df1))
@@ -173,47 +173,45 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	if(F != length(types)) 
 		stop("Length of 'types' does not equal number of fields used for comparison")
 	
-	if( (!is.character(types)) | any( !(types %in% c("str","bi","nu")) ) ) 
+	if((!is.character(types)) || any(!(types %in% c("str","bi","nu")))) 
 		stop("'types' should be a character vector of 'str', 'bi', and/or 'nu' indicating string-based, 
 		binary, or numeric comparisons")
 	
 	c1 <- sapply(df1[,flds1], class)
 	c2 <- sapply(df2[,flds2], class)
 	
-	if( any(types=="nu") & any(c1[types=="nu", drop=FALSE] != "numeric") )
+	if(any(types=="nu") && any(c1[types=="nu", drop=FALSE] != "numeric"))
 		stop(paste("Numeric comparison requested for columns '", paste(colnames(df1)[flds1[types=="nu"]],collapse="' '"), 
 			"' in 'df1', but at least one of these is not numeric", sep=""))
 	
-	if( any(types=="nu") & any(c2[types=="nu", drop=FALSE] != "numeric") )
+	if(any(types=="nu") && any(c2[types=="nu", drop=FALSE] != "numeric"))
 		stop(paste("Numeric comparison requested for columns '", paste(colnames(df2)[flds2[types=="nu"]],collapse="' '"), 
 			"' in 'df2', but at least one of these is not numeric", sep=""))
 	
-	if( !(class(breaks) %in% c("list", "numeric")) )
-		stop("'breaks' should be of class list or numeric")
+	if(!is.list(breaks) && !is.numeric(breaks))
+	  stop("'breaks' should be a list or a numeric vector")
 	
-	if( class(breaks) == "list" ){ # if user specifies list with breaks 
+	if(is.list(breaks)){ # if user specifies list with breaks 
 		if(length(breaks) == F){ # breaks for each comparison field
 			for(fld in 1:F){ # check the breaks provided for each field
 				if(types[fld]=="str"){
-					if( (!is.numeric(breaks[[fld]])) | any(breaks[[fld]] < 0 | breaks[[fld]] > 1) ) 
-						stop(paste("'types[",fld,"]' specified as 'str', so 'breaks[[",fld,"]]' should be a vector of numbers in [0,1]",
-							sep=""))
+					if((!is.numeric(breaks[[fld]])) | any(breaks[[fld]] < 0 | breaks[[fld]] > 1)) 
+						stop(paste0("'types[",fld,"]' specified as 'str', so 'breaks[[",fld,"]]' should be a vector of numbers in [0,1]"))
 					breaks[[fld]] <- unique(c(-Inf,breaks[[fld]],Inf))
 				}
 				if(types[fld]=="nu"){
-					if( (!is.numeric(breaks[[fld]])) | any(breaks[[fld]] < 0) ) 
-						stop(paste("'types[",fld,"]' specified as 'nu', so 'breaks[[",fld,"]]' should be a vector of non-negative numbers",
-							sep=""))
+					if((!is.numeric(breaks[[fld]])) | any(breaks[[fld]] < 0)) 
+						stop(paste0("'types[",fld,"]' specified as 'nu', so 'breaks[[",fld,"]]' should be a vector of non-negative numbers"))
 					breaks[[fld]] <- unique(c(-Inf,breaks[[fld]],Inf))
 				}
 			}
 		}else{ # if length of list is not F, then list needs to be named with elements 'str' and 'nu'
-			if( (length(breaks) != 2) | (!all(names(breaks) %in% c("str","nu"))) )
+			if((length(breaks) != 2) || (!all(names(breaks) %in% c("str","nu"))))
 				stop("When 'breaks' is specified as a list, it should either have length equal to the number of comparison fields, or be a named list with elements 'str' and 'nu'")
-			if( (!is.numeric(breaks$str)) | any(breaks$str < 0 | breaks$str > 1) ) 
+			if((!is.numeric(breaks$str)) | any(breaks$str < 0 | breaks$str > 1)) 
 				stop("'breaks$str should be a vector of numbers in [0,1]")
 			breaks$str <- unique(c(-Inf,breaks$str,Inf))
-			if( (!is.numeric(breaks$nu)) | any(breaks$nu < 0) ) 
+			if((!is.numeric(breaks$nu)) | any(breaks$nu < 0)) 
 				stop("'breaks$nu should be a vector of non-negative numbers")
 			breaks$nu <- unique(c(-Inf,breaks$nu,Inf))
 			
@@ -225,10 +223,10 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 		}
 	}
 	
-	if( class(breaks) == "numeric" ){ # if user specifies only one vector with breaks for all non-binary comparison fields
+	if(is.numeric(breaks)){ # if user specifies only one vector with breaks for all non-binary comparison fields
 		if( any(breaks < 0) ) 
 			stop("When 'breaks' is specified as a numeric vector, it should contain non-negative numbers")
-		if( all(types %in% c("str","bi")) & any(breaks > 1) )
+		if(all(types %in% c("str","bi")) && any(breaks > 1))
 			stop("When 'breaks' is specified as a numeric vector, it should contain numbers in [0,1] if all the non-binary comparisons in 'types' are 'str'")
 		
 		breaks <- unique(c(-Inf,breaks,Inf))
@@ -245,10 +243,10 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	for(fld in 1:F){
 		if(types[fld]=="bi"){
 		# computing agreement levels for binary comparisons
-			if( c1[fld] != c2[fld] )
+			if(c1[fld] != c2[fld])
 				warning(paste("Columns '", colnames(df1)[flds1[fld]], "' in 'df1' and '" , 
 					colnames(df2)[flds2[fld]], "' in 'df2' are of different classes", sep=""))
-			if( (c1[fld] == "factor")&(c2[fld] == "factor") ){
+		  if (c1[fld] == "factor" && c2[fld] == "factor"){
 				levs1 <- sort(levels(df1[,flds1[fld]]))
 				levs2 <- sort(levels(df2[,flds2[fld]]))
 				if(!identical(levs1,levs2)){
@@ -266,7 +264,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 		}
 		if(types[fld]=="nu"){
 			absDiff <- abs(df1[pairInds1,flds1[fld]] - df2[pairInds2,flds2[fld]])
-			AgrLev <- cut(absDiff, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1))
+			AgrLev <- cut(absDiff, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1), include.lowest = TRUE)
 			comparisons[[fld]] <- as.factor(AgrLev)			
 		}
 		if(types[fld]=="str"){
@@ -278,7 +276,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			# the normalization is 0 for complete agreement and 1 for complete disagreement, so we reverse it. 
 			lvd <- 1-as.numeric(stringdist::stringsimmatrix(df1[,flds1[fld]], df2[,flds2[fld]], method = method))
 			
-			AgrLev <- cut(lvd, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1))
+			AgrLev <- cut(lvd, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1), include.lowest = TRUE)
 			comparisons[[fld]] <- as.factor(AgrLev)
 		}
 	}
@@ -298,7 +296,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	df2Fields <- colnames(df2)[flds2]
 	compFields <- data.frame(file1=df1Fields, file2=df2Fields, types=types)
 	
-	if(any(df1Fields != df2Fields) | warn){
+	if(any(df1Fields != df2Fields) || warn){
 		warning(paste("The fields '", paste(df1Fields,collapse="' '"), 
 			"' in 'df1' are being compared with the fields '",
 			paste(df2Fields,collapse="' '"), "' in 'df2'",  
