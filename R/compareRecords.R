@@ -283,11 +283,12 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	
 	nDisagLevs <- sapply(comparisons, FUN=nlevels)
 		
-	# next four lines compute the binary indicators from the agreement levels
-	xfun <- function(f) paste("(comparisons[[",f,"]]==",seq_len(nDisagLevs[f]),")")
-	expr1 <- paste(sapply(sapply(seq_len(F),xfun),FUN=paste,collapse=","),collapse=",")
-	expr2 <- paste("cbind(",expr1,")")
-	comparisons <- eval(parse(text=expr2))
+	# Compute the binary indicators from the agreement levels
+	comparisons <- do.call(cbind, lapply(seq_len(F), function(fld){
+	  sapply(seq_len(nDisagLevs[fld]), function(lvl){
+	    comparisons[[fld]] == lvl
+	  })
+	}))
 	
 	# replacing NAs by FALSE or zeroes is justified by ignorability and CI assumptions (see Sadinle 2017)
 	comparisons[is.na(comparisons)] <- FALSE 
