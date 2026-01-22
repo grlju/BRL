@@ -1,5 +1,5 @@
 useDynLib(BRL,.registration=TRUE)
-importFrom("utils", "adist")
+importFrom("stringdist", "stringdistmatrix")
 export(BRL)
 export(compareRecords)
 export(bipartiteGibbs)

@@ -34,6 +34,10 @@ get recycled to the required length.  If not specified, flat priors are taken.}
 \item{aBM, bBM}{hyper-parameters of beta prior on bipartite matchings. Default is \code{aBM=bBM=1}.}
 
 \item{seed}{seed to be used for pseudo-random number generation.  By default it sets \code{seed=0}.}
+
+\item{...}{... use to pass additional arguments to stringdist::stringdistmatrix to control the distance calculation. 
+The method is set to "lv" by default to maintain consistency with previous versions of BRL. This is different from the 
+default method use in stringdist.}
 }
 \value{
 a list containing: 

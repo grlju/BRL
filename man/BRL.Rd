@@ -22,7 +22,9 @@ BRL(
   lFNM = 1,
   lFM1 = 1,
   lFM2 = 2,
-  lR = Inf
+  lR = Inf,
+  method = "lv",
+  ...
 )
 }
 \arguments{
@@ -47,26 +49,26 @@ If none of \code{flds,flds1,flds2} are specified, the columns with the same name
 are compared, if any.}
 
 \item{types}{a vector of characters indicating the comparison type per comparison field.  The options
-are: \code{"lv"} for comparisons based on the Levenshtein edit distance normalized to \eqn{[0,1]}, with \eqn{0}  
+are: \code{"str"} for comparisons based on the string distance normalized to \eqn{[0,1]}, with \eqn{0}  
 indicating no disagreement and \eqn{1} indicating maximum disagreement;  
 \code{"bi"} for binary comparisons (agreement/disagreement); \code{"nu"} for numeric comparisons computed as 
 the absolute difference. 
-    The default is \code{"lv"}.  Fields compared with the \code{"lv"} option are first transformed to \code{character}
+    The default is \code{"str"}.  Fields compared with the \code{"str"} option are first transformed to \code{character}
 class.  Factors with different levels compared using the \code{"bi"} option are transformed to factors with the union 
     of the levels.  Fields compared with the \code{"nu"} option need to be of class \code{numeric}.}
 
 \item{breaks}{break points for the comparisons to obtain levels of disagreement.
 It can be a list of length equal to the number of comparison fields, containing one numeric vector with the break 
 points for each comparison field, where entries corresponding to comparison type \code{"bi"} are ignored.  
-It can also be a named list of length two with elements 'lv' and 'nu' 
+It can also be a named list of length two with elements 'str' and 'nu' 
 containing numeric vectors with the break 
-points for all Levenshtein-based and numeric comparisons, respectively.  
-Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"lv"} and \code{"nu"},
-which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"lv"} or \code{"nu"}.  
-For comparisons based on the normalized Levenshtein distance, a vector of length \eqn{L} of break 
+points for all string-based and numeric comparisons, respectively.  
+Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"str"} and \code{"nu"},
+which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"str"} or \code{"nu"}.  
+For comparisons based on the normalized string distance, a vector of length \eqn{L} of break 
 points for the interval \eqn{[0,1]} leads to \eqn{L+1} levels of disagreement.  Similarly, for comparisons based on the absolute 
 difference, the break points are for the interval \eqn{[0,\infty)}.  
-The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"lv"}.}
+The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"str"}.}
 
 \item{nIter}{number of iterations of Gibbs sampler.}
 
@@ -89,6 +91,12 @@ get recycled to the required length.  If not specified, flat priors are taken.}
 \item{lFM2}{individual loss of a false match of type 2 in the loss functions of Sadinle (2017), default \code{lFM2=2}.}
 
 \item{lR}{individual loss of 'rejecting' to make a decision in the loss functions of Sadinle (2017), default \code{lR=Inf}.}
+
+\item{method}{method for calculating string distances. See \link[stringdist]{stringdistmatrix} for available methods.
+The default is \code{method = "lv"} to maintain consistency with previous versions of BRL. This is different from the 
+default method use in stringdist.}
+
+\item{...}{use to pass additional arguments to \link[stringdist]{stringdistmatrix} to control the string distance calculation.}
 }
 \value{
 A vector containing the point estimate of the bipartite matching, as in the output of \code{\link{linkRecords}}.  If \code{lR != Inf} the output might be a partial estimate.
@@ -112,7 +120,7 @@ Beta record linkage (BRL, Sadinle, 2017) is a methodology for probabilistic bipa
 
 			The first step of BRL, accomplished by the function \code{\link{compareRecords}}, consists of constructing comparison vectors for each pair of records from the two datafiles.  
 		The current implementation allows binary comparisons (agree/disagree), numerical comparisons based on the absolute difference, 
-			and Levenshtein-based comparisons.  
+			and string-based comparisons.  
 			This can be easily extended to other comparison types, so a resourceful user should be able to construct an object that recreates 
 			the output of \code{\link{compareRecords}} for other types of comparisons (so long as they get transformed to levels of disagreement), and still be able to run the next step outside 
 			the function \code{BRL}.
@@ -144,7 +152,7 @@ Beta record linkage (BRL, Sadinle, 2017) is a methodology for probabilistic bipa
 data(twoFiles)
 
 (Zhat <- BRL(df1, df2, flds=c("gname", "fname", "age", "occup"), 
-				types=c("lv","lv","bi","bi")))
+				types=c("str","str","bi","bi")))
 
 n1 <- nrow(df1)
 
@@ -175,7 +183,7 @@ cbind( df1[Zhat[Zhat<=n1],], df2[Zhat<=n1,] )
 ## create comparison data 
 myCompData <- compareRecords(df1, df2, 
                              flds=c("gname", "fname", "age", "occup"), 
-                             types=c("lv","lv","bi","bi"))
+                             types=c("str","str","bi","bi"))
 
 ## Gibbs sampling from posterior of bipartite matchings
 chain <- bipartiteGibbs(myCompData)

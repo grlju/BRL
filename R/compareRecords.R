@@ -21,25 +21,30 @@
 #'				If none of \code{flds,flds1,flds2} are specified, the columns with the same names in \code{df1} and \code{df2} 
 #'				are compared, if any.  
 #' @param types	a vector of characters indicating the comparison type per comparison field.  The options
-#'				are: \code{"lv"} for comparisons based on the Levenshtein edit distance normalized to \eqn{[0,1]}, with \eqn{0}  
+#'				are: \code{"str"} for comparisons based on the string distance normalized to \eqn{[0,1]}, with \eqn{0}  
 #'				indicating no disagreement and \eqn{1} indicating maximum disagreement;  
 #'				\code{"bi"} for binary comparisons (agreement/disagreement); \code{"nu"} for numeric comparisons computed as 
 #'				the absolute difference. 
-#' 				The default is \code{"lv"}.  Fields compared with the \code{"lv"} option are first transformed to \code{character}
+#' 				The default is \code{"str"}.  Fields compared with the \code{"str"} option are first transformed to \code{character}
 #'				class.  Factors with different levels compared using the \code{"bi"} option are transformed to factors with the union 
 #' 				of the levels.  Fields compared with the \code{"nu"} option need to be of class \code{numeric}.
 #' @param breaks	break points for the comparisons to obtain levels of disagreement.  
 #'				It can be a list of length equal to the number of comparison fields, containing one numeric vector with the break 
 #'				points for each comparison field, where entries corresponding to comparison type \code{"bi"} are ignored.  
-#'				It can also be a named list of length two with elements 'lv' and 'nu' 
+#'				It can also be a named list of length two with elements 'str' and 'nu' 
 #'				containing numeric vectors with the break 
-#'				points for all Levenshtein-based and numeric comparisons, respectively.  
-#'				Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"lv"} and \code{"nu"},
-#'				which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"lv"} or \code{"nu"}.  
-#'				For comparisons based on the normalized Levenshtein distance, a vector of length \eqn{L} of break 
+#'				points for all string-based and numeric comparisons, respectively.  
+#'				Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"str"} and \code{"nu"},
+#'				which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"str"} or \code{"nu"}.  
+#'				For comparisons based on the normalized string distance, a vector of length \eqn{L} of break 
 #'				points for the interval \eqn{[0,1]} leads to \eqn{L+1} levels of disagreement.  Similarly, for comparisons based on the absolute 
 #'				difference, the break points are for the interval \eqn{[0,\infty)}.  
-#'				The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"lv"}.
+#'				The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"str"}.
+#' @param method method for calculating string distances. See \link[stringdist]{stringdistmatrix} for available methods.
+#'        The default is \code{method = "lv"} to maintain consistency with previous versions of BRL. This is different from the 
+#'        default method use in stringdist.
+#' @param ... use to pass additional arguments to \link[stringdist]{stringdistmatrix} to control the string distance calculation. 
+#'  
 #' @return a list containing: 
 #' \describe{
 #'   \item{\code{comparisons}}{
@@ -64,30 +69,30 @@
 #' 
 #' myCompData <- compareRecords(df1, df2, 
 #'                              flds=c("gname", "fname", "age", "occup"),
-#'                              types=c("lv","lv","bi","bi"), 
+#'                              types=c("str","str","bi","bi"), 
 #'                              breaks=c(0,.25,.5))
 #' 
 #' ## same as 
-#' myCompData <- compareRecords(df1, df2, types=c("lv","lv","bi","bi"))
+#' myCompData <- compareRecords(df1, df2, types=c("str","str","bi","bi"))
 #' 
 #' 
 #' ## let's transform 'occup' to numeric to illustrate how to obtain numeric comparisons 
 #' df1$occup <- as.numeric(df1$occup)
 #' df2$occup <- as.numeric(df2$occup)
 #' 
-#' ## using different break points for 'lv' and 'nu' comparisons 
+#' ## using different break points for 'str' and 'nu' comparisons 
 #' myCompData1 <- compareRecords(df1, df2, 
 #'                               flds=c("gname", "fname", "age", "occup"),
-#'                               types=c("lv","lv","bi","nu"), 
-#'                               breaks=list(lv=c(0,.25,.5), nu=0:3))
+#'                               types=c("str","str","bi","nu"), 
+#'                               breaks=list(str=c(0,.25,.5), nu=0:3))
 #' 
 #' ## using different break points for each comparison field
 #' myCompData2 <- compareRecords(df1, df2, 
 #'                               flds=c("gname", "fname", "age", "occup"),
-#'                               types=c("lv","lv","bi","nu"), 
+#'                               types=c("str","str","bi","nu"), 
 #'                               breaks=list(c(0,.25,.5), c(0,.2,.4,.6), NULL, 0:3))
 
-compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NULL, breaks=c(0,.25,.5)){
+compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NULL, breaks=c(0,.25,.5), method = "lv", ...){
 	
 	warn <- FALSE
 	
@@ -163,13 +168,13 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 
 	F <- length(flds1)
 	
-	if(is.null(types)) types <- rep("lv",F)
+	if(is.null(types)) types <- rep("str",F)
 	
 	if(F != length(types)) 
 		stop("Length of 'types' does not equal number of fields used for comparison")
 	
-	if( (!is.character(types)) | any( !(types %in% c("lv","bi","nu")) ) ) 
-		stop("'types' should be a character vector of 'lv', 'bi', and/or 'nu' indicating Levenshtein-based, 
+	if( (!is.character(types)) | any( !(types %in% c("str","bi","nu")) ) ) 
+		stop("'types' should be a character vector of 'str', 'bi', and/or 'nu' indicating string-based, 
 		binary, or numeric comparisons")
 	
 	c1 <- sapply(df1[,flds1], class)
@@ -189,9 +194,9 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	if( class(breaks) == "list" ){ # if user specifies list with breaks 
 		if(length(breaks) == F){ # breaks for each comparison field
 			for(fld in 1:F){ # check the breaks provided for each field
-				if(types[fld]=="lv"){
+				if(types[fld]=="str"){
 					if( (!is.numeric(breaks[[fld]])) | any(breaks[[fld]] < 0 | breaks[[fld]] > 1) ) 
-						stop(paste("'types[",fld,"]' specified as 'lv', so 'breaks[[",fld,"]]' should be a vector of numbers in [0,1]",
+						stop(paste("'types[",fld,"]' specified as 'str', so 'breaks[[",fld,"]]' should be a vector of numbers in [0,1]",
 							sep=""))
 					breaks[[fld]] <- unique(c(-Inf,breaks[[fld]],Inf))
 				}
@@ -202,12 +207,12 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 					breaks[[fld]] <- unique(c(-Inf,breaks[[fld]],Inf))
 				}
 			}
-		}else{ # if length of list is not F, then list needs to be named with elements 'lv' and 'nu'
-			if( (length(breaks) != 2) | (!all(names(breaks) %in% c("lv","nu"))) )
-				stop("When 'breaks' is specified as a list, it should either have length equal to the number of comparison fields, or be a named list with elements 'lv' and 'nu'")
-			if( (!is.numeric(breaks$lv)) | any(breaks$lv < 0 | breaks$lv > 1) ) 
-				stop("'breaks$lv should be a vector of numbers in [0,1]")
-			breaks$lv <- unique(c(-Inf,breaks$lv,Inf))
+		}else{ # if length of list is not F, then list needs to be named with elements 'str' and 'nu'
+			if( (length(breaks) != 2) | (!all(names(breaks) %in% c("str","nu"))) )
+				stop("When 'breaks' is specified as a list, it should either have length equal to the number of comparison fields, or be a named list with elements 'str' and 'nu'")
+			if( (!is.numeric(breaks$str)) | any(breaks$str < 0 | breaks$str > 1) ) 
+				stop("'breaks$str should be a vector of numbers in [0,1]")
+			breaks$str <- unique(c(-Inf,breaks$str,Inf))
 			if( (!is.numeric(breaks$nu)) | any(breaks$nu < 0) ) 
 				stop("'breaks$nu should be a vector of non-negative numbers")
 			breaks$nu <- unique(c(-Inf,breaks$nu,Inf))
@@ -215,7 +220,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			breaks1 <- list()
 			breaks1[1:F] <- list(NULL)
 			breaks1[types=="nu"] <- list(breaks$nu)
-			breaks1[types=="lv"] <- list(breaks$lv)
+			breaks1[types=="str"] <- list(breaks$str)
 			breaks <- breaks1
 		}
 	}
@@ -223,8 +228,8 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	if( class(breaks) == "numeric" ){ # if user specifies only one vector with breaks for all non-binary comparison fields
 		if( any(breaks < 0) ) 
 			stop("When 'breaks' is specified as a numeric vector, it should contain non-negative numbers")
-		if( all(types %in% c("lv","bi")) & any(breaks > 1) )
-			stop("When 'breaks' is specified as a numeric vector, it should contain numbers in [0,1] if all the non-binary comparisons in 'types' are 'lv'")
+		if( all(types %in% c("str","bi")) & any(breaks > 1) )
+			stop("When 'breaks' is specified as a numeric vector, it should contain numbers in [0,1] if all the non-binary comparisons in 'types' are 'str'")
 		
 		breaks <- unique(c(-Inf,breaks,Inf))
 		breaks1 <- list()
@@ -264,14 +269,14 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			AgrLev <- cut(absDiff, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1))
 			comparisons[[fld]] <- as.factor(AgrLev)			
 		}
-		if(types[fld]=="lv"){
-		# computing agreement levels for Levenshtein-based comparisons
+		if(types[fld]=="str"){
+		# computing agreement levels for string based comparisons
 			df1[,flds1[fld]] <- as.character(df1[,flds1[fld]])
 			df2[,flds2[fld]] <- as.character(df2[,flds2[fld]])
 			
-			# adist in the utils package returns the matrix of Levenshtein distances
-			lvd <- as.numeric(utils::adist(df1[,flds1[fld]], df2[,flds2[fld]]))/
-					pmax(nchar(df1[,flds1[fld]])[pairInds1], nchar(df2[,flds2[fld]])[pairInds2])
+			# stringsimmatrix in the stringdist package returns the matrix of string distances normalized between 0 and 1
+			# the normalization is 0 for complete agreement and 1 for complete disagreement, so we reverse it. 
+			lvd <- 1-as.numeric(stringdist::stringsimmatrix(df1[,flds1[fld]], df2[,flds2[fld]], method = method))
 			
 			AgrLev <- cut(lvd, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1))
 			comparisons[[fld]] <- as.factor(AgrLev)

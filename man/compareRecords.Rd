@@ -11,7 +11,9 @@ compareRecords(
   flds1 = NULL,
   flds2 = NULL,
   types = NULL,
-  breaks = c(0, 0.25, 0.5)
+  breaks = c(0, 0.25, 0.5),
+  method = "lv",
+  ...
 )
 }
 \arguments{
@@ -36,26 +38,32 @@ If none of \code{flds,flds1,flds2} are specified, the columns with the same name
 are compared, if any.}
 
 \item{types}{a vector of characters indicating the comparison type per comparison field.  The options
-are: \code{"lv"} for comparisons based on the Levenshtein edit distance normalized to \eqn{[0,1]}, with \eqn{0}  
+are: \code{"str"} for comparisons based on the string distance normalized to \eqn{[0,1]}, with \eqn{0}  
 indicating no disagreement and \eqn{1} indicating maximum disagreement;  
 \code{"bi"} for binary comparisons (agreement/disagreement); \code{"nu"} for numeric comparisons computed as 
 the absolute difference. 
-    The default is \code{"lv"}.  Fields compared with the \code{"lv"} option are first transformed to \code{character}
+    The default is \code{"str"}.  Fields compared with the \code{"str"} option are first transformed to \code{character}
 class.  Factors with different levels compared using the \code{"bi"} option are transformed to factors with the union 
     of the levels.  Fields compared with the \code{"nu"} option need to be of class \code{numeric}.}
 
 \item{breaks}{break points for the comparisons to obtain levels of disagreement.
 It can be a list of length equal to the number of comparison fields, containing one numeric vector with the break 
 points for each comparison field, where entries corresponding to comparison type \code{"bi"} are ignored.  
-It can also be a named list of length two with elements 'lv' and 'nu' 
+It can also be a named list of length two with elements 'str' and 'nu' 
 containing numeric vectors with the break 
-points for all Levenshtein-based and numeric comparisons, respectively.  
-Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"lv"} and \code{"nu"},
-which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"lv"} or \code{"nu"}.  
-For comparisons based on the normalized Levenshtein distance, a vector of length \eqn{L} of break 
+points for all string-based and numeric comparisons, respectively.  
+Finally, it can be a numeric vector with the break points for all comparison fields of type \code{"str"} and \code{"nu"},
+which might be meaningful only if all the non-binary comparisons are of a single type, either \code{"str"} or \code{"nu"}.  
+For comparisons based on the normalized string distance, a vector of length \eqn{L} of break 
 points for the interval \eqn{[0,1]} leads to \eqn{L+1} levels of disagreement.  Similarly, for comparisons based on the absolute 
 difference, the break points are for the interval \eqn{[0,\infty)}.  
-The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"lv"}.}
+The default is \code{breaks=c(0,.25,.5)}, which might be meaningful only for comparisons of type \code{"str"}.}
+
+\item{method}{method for calculating string distances. See \link[stringdist]{stringdistmatrix} for available methods.
+The default is \code{method = "lv"} to maintain consistency with previous versions of BRL. This is different from the 
+default method use in stringdist.}
+
+\item{...}{use to pass additional arguments to \link[stringdist]{stringdistmatrix} to control the string distance calculation.}
 }
 \value{
 a list containing: 
@@ -83,27 +91,27 @@ data(twoFiles)
 
 myCompData <- compareRecords(df1, df2, 
                              flds=c("gname", "fname", "age", "occup"),
-                             types=c("lv","lv","bi","bi"), 
+                             types=c("str","str","bi","bi"), 
                              breaks=c(0,.25,.5))
 
 ## same as 
-myCompData <- compareRecords(df1, df2, types=c("lv","lv","bi","bi"))
+myCompData <- compareRecords(df1, df2, types=c("str","str","bi","bi"))
 
 
 ## let's transform 'occup' to numeric to illustrate how to obtain numeric comparisons 
 df1$occup <- as.numeric(df1$occup)
 df2$occup <- as.numeric(df2$occup)
 
-## using different break points for 'lv' and 'nu' comparisons 
+## using different break points for 'str' and 'nu' comparisons 
 myCompData1 <- compareRecords(df1, df2, 
                               flds=c("gname", "fname", "age", "occup"),
-                              types=c("lv","lv","bi","nu"), 
-                              breaks=list(lv=c(0,.25,.5), nu=0:3))
+                              types=c("str","str","bi","nu"), 
+                              breaks=list(str=c(0,.25,.5), nu=0:3))
 
 ## using different break points for each comparison field
 myCompData2 <- compareRecords(df1, df2, 
                               flds=c("gname", "fname", "age", "occup"),
-                              types=c("lv","lv","bi","nu"), 
+                              types=c("str","str","bi","nu"), 
                               breaks=list(c(0,.25,.5), c(0,.2,.4,.6), NULL, 0:3))
 }
 \references{
