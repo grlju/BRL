@@ -148,7 +148,7 @@
 #' nCorrectLinks/nMatches
 #' 
 #' ## the linked record pairs
-#' cbind( df1[Zhat[Zhat<=n1],], df2[Zhat<=n1,] )
+#' cbind(df1[Zhat[Zhat<=n1],], df2[Zhat<=n1,])
 #' 
 #' ## finally, note that we could run BRL step by step as follows
 #' 
@@ -175,7 +175,7 @@ BRL <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NULL, breaks=
 		stop("burn should be an integer that satisfies 0 <= burn < nIter")
 	
 	# create comparison data 
-	myCompData <- compareRecords(df1, df2, flds, flds1, flds2, types, breaks, method)
+	myCompData <- compareRecords(df1, df2, flds, flds1, flds2, types, breaks, method, ...)
 	# Gibbs sampling from posterior of bipartite matchings
 	chain <- bipartiteGibbs(myCompData, nIter, a, b, aBM, bBM, seed)
 	# bipartite matching Bayes estimate derived from the loss functions of Sadinle (2017)

@@ -94,8 +94,6 @@
 
 compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NULL, breaks=c(0,.25,.5), method = "lv", ...){
 	
-	warn <- FALSE
-	
 	# control the input
 	
 	if(!is.data.frame(df1)) stop("'df1' is not a data frame")
@@ -115,7 +113,6 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			if(!all(fldsCheck1)) stop("Some numbers in 'flds' are out of the column range for 'df1'")
 			fldsCheck2 <- flds %in% seq_len(ncol(df2))
 			if(!all(fldsCheck2)) stop("Some numbers in 'flds' are out of the column range for 'df2'")
-			warn <- TRUE
 		}
 		if(is.character(flds)){
 			fldsCheck1 <- flds %in% colnames(df1)
@@ -274,7 +271,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 			
 			# stringsimmatrix in the stringdist package returns the matrix of string distances normalized between 0 and 1
 			# the normalization is 0 for complete agreement and 1 for complete disagreement, so we reverse it. 
-			lvd <- 1 - stringdist::stringsimmatrix(df1[,flds1[fld]], df2[,flds2[fld]], method = method)
+			lvd <- 1 - stringdist::stringsimmatrix(df1[,flds1[fld]], df2[,flds2[fld]], method = method, ...)
 
 			AgrLev <- cut(lvd, breaks=breaks[[fld]], labels=seq_len(length(breaks[[fld]])-1), include.lowest = TRUE)
 			comparisons[[fld]] <- as.factor(AgrLev)
@@ -297,7 +294,7 @@ compareRecords <- function(df1, df2, flds=NULL, flds1=NULL, flds2=NULL, types=NU
 	df2Fields <- colnames(df2)[flds2]
 	compFields <- data.frame(file1=df1Fields, file2=df2Fields, types=types)
 	
-	if(any(df1Fields != df2Fields) || warn){
+	if(any(df1Fields != df2Fields)){
 		warning(paste("The fields '", paste(df1Fields,collapse="' '"), 
 			"' in 'df1' are being compared with the fields '",
 			paste(df2Fields,collapse="' '"), "' in 'df2'",  

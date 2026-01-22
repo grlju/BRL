@@ -176,7 +176,7 @@ nCorrectLinks/nLinks
 nCorrectLinks/nMatches
 
 ## the linked record pairs
-cbind( df1[Zhat[Zhat<=n1],], df2[Zhat<=n1,] )
+cbind(df1[Zhat[Zhat<=n1],], df2[Zhat<=n1,])
 
 ## finally, note that we could run BRL step by step as follows
 
